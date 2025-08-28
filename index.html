@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glossaire Métier Extendam</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+        
+        .sync-status {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+        
+        .sync-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #27ae60;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .sync-error {
+            background: #e74c3c;
+            animation: none;
+        }
+        
+        .controls {
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            align-items: end;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+        
+        .control-group label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.9rem;
+        }
+        
+        select, input {
+            padding: 0.6rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        
+        .refresh-btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+        
+        .refresh-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .glossary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 1.5rem;
+            padding: 1.5rem;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .term-card {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .term-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #3498db, #9b59b6);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .term-card:hover {
+            border-color: #3498db;
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.15);
+            transform: translateY(-4px);
+        }
+        
+        .term-card:hover::before {
+            opacity: 1;
+        }
+        
+        .term-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        
+        .term-title {
+            font-weight: 700;
+            color: #2c3e50;
+            font-size: 1.2rem;
+            line-height: 1.3;
+            flex: 1;
+        }
+        
+        .term-version {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+        
+        .term-domains {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-bottom: 1rem;
+        }
+        
+        .domain-tag {
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .domain-finance { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        .domain-marketing { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+        .domain-opérations { background: linear-gradient(135deg, #3498db, #2980b9); }
+        .domain-rh { background: linear-gradient(135deg, #f39c12, #e67e22); }
+        .domain-technique { background: linear-gradient(135deg, #1abc9c, #16a085); }
+        .domain-juridique { background: linear-gradient(135deg, #34495e, #2c3e50); }
+        
+        .term-definition {
+            color: #495057;
+            line-height: 1.5;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+            text-align: justify;
+        }
+        
+        .term-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1rem;
+            border-top: 1px solid #f1f3f4;
+            font-size: 0.85rem;
+        }
+        
+        .meta-left {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+        
+        .term-owner {
+            color: #6c757d;
+            font-weight: 600;
+        }
+        
+        .term-date {
+            color: #868e96;
+            font-size: 0.8rem;
+        }
+        
+        .status-badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+        
+        .status-actif {
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            color: #155724;
+        }
+        
+        .status-en-révision {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            color: #856404;
+        }
+        
+        .status-obsolète {
+            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+            color: #721c24;
+        }
+        
+        .status-brouillon {
+            background: linear-gradient(135deg, #e2e3e5, #d1d3d4);
+            color: #383d41;
+        }
+        
+        .priority-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+        
+        .priority-élevée { background: #e74c3c; }
+        .priority-moyenne { background: #f39c12; }
+        .priority-faible { background: #27ae60; }
+        
+        .stats-bar {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-top: 1px solid #e9ecef;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+        }
+        
+        .stat {
+            text-align: center;
+            padding: 0.5rem;
+        }
+        
+        .stat-number {
+            display: block;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.2rem;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            font-weight: 600;
+        }
+        
+        .no-results, .error-message, .loading-message {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #6c757d;
+        }
+        
+        .no-results h3, .error-message h3, .loading-message h3 {
+            margin-bottom: 1rem;
+            color: #495057;
+        }
+        
+        .error-message {
+            color: #dc3545;
+        }
+        
+        .error-message h3 {
+            color: #dc3545;
+        }
+        
+        @media (max-width: 768px) {
+            body { padding: 0.5rem; }
+            .header { padding: 1.5rem 1rem; }
+            .header h1 { font-size: 1.8rem; }
+            .sync-status { position: static; justify-content: center; margin-top: 1rem; }
+            .controls { grid-template-columns: 1fr; }
+            .glossary-grid { grid-template-columns: 1fr; padding: 1rem; }
+            .term-card { padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="sync-status" id="syncStatus">
+                <div class="sync-indicator" id="syncIndicator"></div>
+                <span id="syncText">Connecté à Notion</span>
+            </div>
+            <h1>📚 Glossaire Métier Extendam</h1>
+            <p>Synchronisé automatiquement avec Notion</p>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>🔍 Rechercher</label>
+                <input type="text" id="searchInput" placeholder="Terme, définition, propriétaire...">
+            </div>
+            
+            <div class="control-group">
+                <label>🏷️ Domaine</label>
+                <select id="domainFilter">
+                    <option value="">Tous les domaines</option>
+                    <option value="Finance">Finance</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Opérations">Opérations</option>
+                    <option value="RH">Ressources Humaines</option>
+                    <option value="Technique">Technique</option>
+                    <option value="Juridique">Juridique</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label>📊 Statut</label>
+                <select id="statusFilter">
+                    <option value="">Tous les statuts</option>
+                    <option value="Actif">Actif</option>
+                    <option value="En révision">En révision</option>
+                    <option value="Obsolète">Obsolète</option>
+                    <option value="Brouillon">Brouillon</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label>⚡ Priorité</label>
+                <select id="priorityFilter">
+                    <option value="">Toutes priorités</option>
+                    <option value="Élevée">Élevée</option>
+                    <option value="Moyenne">Moyenne</option>
+                    <option value="Faible">Faible</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label>🔄 Actions</label>
+                <button class="refresh-btn" id="refreshBtn" onclick="loadNotionData()">
+                    <div class="loading-spinner" id="loadingSpinner" style="display: none;"></div>
+                    <span id="refreshText">Actualiser</span>
+                </button>
+            </div>
+        </div>
+        
+        <div id="glossaryContainer">
+            <div class="loading-message">
+                <h3>Chargement des données...</h3>
+                <div class="loading-spinner" style="margin: 0 auto;"></div>
+            </div>
+        </div>
+        
+        <div class="stats-bar">
+            <div class="stat">
+                <span class="stat-number" id="totalCount">-</span>
+                <span class="stat-label">Total</span>
+            </div>
+            <div class="stat">
+                <span class="stat-number" id="activeCount">-</span>
+                <span class="stat-label">Actifs</span>
+            </div>
+            <div class="stat">
+                <span class="stat-number" id="domainCount">-</span>
+                <span class="stat-label">Domaines</span>
+            </div>
+            <div class="stat">
+                <span class="stat-number" id="lastSync">-</span>
+                <span class="stat-label">Dernière sync</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration - À REMPLACER PAR VOS VRAIES VALEURS
+        const CONFIG = {
+            NOTION_TOKEN: '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',
+            DATABASE_ID: '25db8a91a89280fdbe19d1563f3e71d7',
+            CORS_PROXY: 'https://cors-anywhere.herokuapp.com/' // Alternative: utiliser Netlify Functions
+        };
+
+        // Variables globales
+        let glossaryData = [];
+        let filteredData = [];
+
+        // Utilitaires
+        function getDomainClass(domain) {
+            return `domain-${domain.toLowerCase().replace(/é/g, 'e').replace(/ /g, '-')}`;
+        }
+
+        function getStatusClass(status) {
+            return `status-${status.toLowerCase().replace(/é/g, 'e').replace(/ /g, '-')}`;
+        }
+
+        function getPriorityClass(priority) {
+            return `priority-${priority.toLowerCase().replace(/é/g, 'e')}`;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('fr-FR');
+        }
+
+        // Statut de synchronisation
+        function updateSyncStatus(status, message) {
+            const indicator = document.getElementById('syncIndicator');
+            const text = document.getElementById('syncText');
+            
+            indicator.className = 'sync-indicator';
+            if (status === 'error') {
+                indicator.classList.add('sync-error');
+            }
+            
+            text.textContent = message;
+        }
+
+        // Chargement des données depuis Notion
+        async function loadNotionData() {
+            const refreshBtn = document.getElementById('refreshBtn');
+            const refreshText = document.getElementById('refreshText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            
+            try {
+                // UI Loading
+                refreshBtn.disabled = true;
+                loadingSpinner.style.display = 'block';
+                refreshText.textContent = 'Chargement...';
+                updateSyncStatus('loading', 'Synchronisation...');
+
+                const response = await fetch(`${CONFIG.CORS_PROXY}https://api.notion.com/v1/databases/${CONFIG.DATABASE_ID}/query`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${CONFIG.NOTION_TOKEN}`,
+                        'Content-Type': 'application/json',
+                        'Notion-Version': '2022-06-28'
+                    },
+                    body: JSON.stringify({
+                        sorts: [
+                            {
+                                property: 'Terme',
+                                direction: 'ascending'
+                            }
+                        ]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erreur API Notion: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Transformation des données Notion
+                glossaryData = data.results.map(page => ({
+                    id: page.id,
+                    term: page.properties.Terme?.title?.[0]?.plain_text || 'Sans nom',
+                    domains: page.properties.Domaines?.multi_select?.map(d => d.name) || [],
+                    definition: page.properties.Définition?.rich_text?.[0]?.plain_text || 'Aucune définition',
+                    status: page.properties.Statut?.select?.name || 'Brouillon',
+                    owner: page.properties.Propriétaire?.rich_text?.[0]?.plain_text || 'Non assigné',
+                    lastUpdate: page.properties['Dernière MAJ']?.date?.start || null,
+                    priority: page.properties.Priorité?.select?.name || 'Faible',
+                    version: page.properties.Version?.rich_text?.[0]?.plain_text || '1.0',
+                    notionUrl: page.url
+                }));
+
+                updateSyncStatus('success', 'Synchronisé');
+                document.getElementById('lastSync').textContent = new Date().toLocaleTimeString('fr-FR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                
+                applyFilters();
+
+            } catch (error) {
+                console.error('Erreur lors du chargement:', error);
+                updateSyncStatus('error', 'Erreur de sync');
+                showError(error.message);
+            } finally {
+                refreshBtn.disabled = false;
+                loadingSpinner.style.display = 'none';
+                refreshText.textContent = 'Actualiser';
+            }
+        }
+
+        // Affichage d'erreur
+        function showError(message) {
+            document.getElementById('glossaryContainer').innerHTML = `
+                <div class="error-message">
+                    <h3>❌ Erreur de chargement</h3>
+                    <p>${message}</p>
+                    <p><strong>Vérifiez :</strong></p>
+                    <ul style="text-align: left; display: inline-block; margin-top: 1rem;">
+                        <li>Votre token Notion</li>
+                        <li>L'ID de votre database</li>
+                        <li>Les permissions de l'intégration</li>
+                        <li>La structure de votre database</li>
+                    </ul>
+                    <br><br>
+                    <button class="refresh-btn" onclick="loadNotionData()" style="margin-top: 1rem;">
+                        Réessayer
+                    </button>
+                </div>
+            `;
+        }
+
+        // Création d'une carte de terme
+        function createTermCard(term) {
+            const domainsHtml = term.domains.map(domain => 
+                `<span class="domain-tag ${getDomainClass(domain)}">${domain}</span>`
+            ).join('');
+
+            return `
+                <div class="term-card" onclick="window.open('${term.notionUrl}', '_blank')">
+                    <div class="term-header">
+                        <h3 class="term-title">${term.term}</h3>
+                        <span class="term-version">v${term.version}</span>
+                    </div>
+                    
+                    <div class="term-domains">
+                        ${domainsHtml}
+                    </div>
+                    
+                    <div class="term-definition">
+                        ${term.definition}
+                    </div>
+                    
+                    <div class="term-meta">
+                        <div class="meta-left">
+                            <div class="term-owner">
+                                <span class="priority-indicator ${getPriorityClass(term.priority)}"></span>
+                                ${term.owner}
+                            </div>
+                            <div class="term-date">MAJ: ${formatDate(term.lastUpdate)}</div>
+                        </div>
+                        <span class="status-badge ${getStatusClass(term.status)}">${term.status}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Rendu du glossaire
+        function renderGlossary(data) {
+            const container = document.getElementById('glossaryContainer');
+            
+            if (data.length === 0) {
+                container.innerHTML = `
+                    <div class="no-results">
+                        <h3>🔍 Aucun terme trouvé</h3>
+                        <p>Essayez de modifier vos critères de recherche</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="glossary-grid">
+                        ${data.map(createTermCard).join('')}
+                    </div>
+                `;
+            }
+            
+            updateStats(data);
+        }
+
+        // Mise à jour des statistiques
+        function updateStats(data) {
+            document.getElementById('totalCount').textContent = data.length;
+            document.getElementById('activeCount').textContent = data.filter(t => t.status === 'Actif').length;
+            
+            const domains = new Set();
+            data.forEach(term => term.domains.forEach(d => domains.add(d)));
+            document.getElementById('domainCount').textContent = domains.size;
+        }
+
+        // Application des filtres
+        function applyFilters() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const domain = document.getElementById('domainFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            const priority = document.getElementById('priorityFilter').value;
+
+            filteredData = glossaryData.filter(term => {
+                const matchesSearch = !search || 
+                    term.term.toLowerCase().includes(search) ||
+                    term.definition.toLowerCase().includes(search) ||
+                    term.owner.toLowerCase().includes(search);
+                
+                const matchesDomain = !domain || term.domains.includes(domain);
+                const matchesStatus = !status || term.status === status;
+                const matchesPriority = !priority || term.priority === priority;
+
+                return matchesSearch && matchesDomain && matchesStatus && matchesPriority;
+            });
+
+            renderGlossary(filteredData);
+        }
+
+        // Event listeners
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+        document.getElementById('domainFilter').addEventListener('change', applyFilters);
+        document.getElementById('statusFilter').addEventListener('change', applyFilters);
+        document.getElementById('priorityFilter').addEventListener('change', applyFilters);
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', () => {
+            // Auto-refresh toutes les 5 minutes
+            setInterval(loadNotionData, 5 * 60 * 1000);
+            
+            // Chargement initial
+            loadNotionData();
+        });
+    </script>
+</body>
+</html>

@@ -363,6 +363,23 @@
             color: #dc3545;
         }
         
+        .demo-btn {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .demo-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+        }
+        
         @media (max-width: 768px) {
             body { padding: 0.5rem; }
             .header { padding: 1.5rem 1rem; }
@@ -379,10 +396,10 @@
         <div class="header">
             <div class="sync-status" id="syncStatus">
                 <div class="sync-indicator" id="syncIndicator"></div>
-                <span id="syncText">Mode démo</span>
+                <span id="syncText">Connecté à Notion</span>
             </div>
             <h1>📚 Glossaire Métier Extendam</h1>
-            <p>Interface de démonstration</p>
+            <p>Synchronisé automatiquement avec Notion</p>
         </div>
         
         <div class="controls">
@@ -427,30 +444,31 @@
             
             <div class="control-group">
                 <label>🔄 Actions</label>
-                <button class="refresh-btn" id="refreshBtn" onclick="loadDemoData()">
+                <button class="refresh-btn" id="refreshBtn" onclick="loadNotionData()">
                     <div class="loading-spinner" id="loadingSpinner" style="display: none;"></div>
-                    <span id="refreshText">Charger démo</span>
+                    <span id="refreshText">Actualiser</span>
                 </button>
             </div>
         </div>
         
         <div id="glossaryContainer">
             <div class="loading-message">
-                <h3>Cliquez sur "Charger démo" pour voir des exemples</h3>
+                <h3>Connexion à votre database Notion...</h3>
+                <div class="loading-spinner" style="margin: 0 auto;"></div>
             </div>
         </div>
         
         <div class="stats-bar">
             <div class="stat">
-                <span class="stat-number" id="totalCount">0</span>
+                <span class="stat-number" id="totalCount">-</span>
                 <span class="stat-label">Total</span>
             </div>
             <div class="stat">
-                <span class="stat-number" id="activeCount">0</span>
+                <span class="stat-number" id="activeCount">-</span>
                 <span class="stat-label">Actifs</span>
             </div>
             <div class="stat">
-                <span class="stat-number" id="domainCount">0</span>
+                <span class="stat-number" id="domainCount">-</span>
                 <span class="stat-label">Domaines</span>
             </div>
             <div class="stat">
@@ -497,20 +515,87 @@
             text.textContent = message;
         }
 
-        // Chargement des données de démonstration
-        function loadDemoData() {
+        // Connexion réelle à Notion
+        async function loadNotionData() {
             const refreshBtn = document.getElementById('refreshBtn');
             const refreshText = document.getElementById('refreshText');
             const loadingSpinner = document.getElementById('loadingSpinner');
             
-            // UI Loading
-            refreshBtn.disabled = true;
-            loadingSpinner.style.display = 'block';
-            refreshText.textContent = 'Chargement...';
-            updateSyncStatus('loading', 'Chargement démo...');
+            try {
+                // UI Loading
+                refreshBtn.disabled = true;
+                loadingSpinner.style.display = 'block';
+                refreshText.textContent = 'Synchronisation...';
+                updateSyncStatus('loading', 'Connexion à Notion...');
 
+                console.log('Appel de la fonction Netlify...');
+                
+                // Appel à votre fonction Netlify
+                const response = await fetch('/.netlify/functions/notion-proxy', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                console.log('Réponse reçue:', response.status);
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('Erreur API:', errorData);
+                    throw new Error(`Erreur ${response.status}: ${errorData.message || response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Données Notion:', data);
+
+                if (!data.results || !Array.isArray(data.results)) {
+                    throw new Error('Format de données invalide reçu de Notion');
+                }
+
+                processNotionData(data);
+                updateSyncStatus('success', 'Synchronisé avec Notion');
+                document.getElementById('lastSync').textContent = new Date().toLocaleTimeString('fr-FR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+
+            } catch (error) {
+                console.error('Erreur de synchronisation:', error);
+                updateSyncStatus('error', 'Erreur de sync');
+                
+                // En cas d'erreur, afficher les options
+                document.getElementById('glossaryContainer').innerHTML = `
+                    <div class="error-message">
+                        <h3>⚠️ Problème de connexion à Notion</h3>
+                        <p><strong>Erreur:</strong> ${error.message}</p>
+                        <div style="margin: 1.5rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px; text-align: left;">
+                            <strong>Vérifications :</strong><br>
+                            • L'intégration est-elle connectée à la database ?<br>
+                            • Y a-t-il au moins une ligne dans la database ?<br>
+                            • Les colonnes ont-elles les bons noms ?<br>
+                            • Test direct : <a href="/.netlify/functions/notion-proxy" target="_blank" style="color: #3498db;">/.netlify/functions/notion-proxy</a>
+                        </div>
+                        <button class="refresh-btn" onclick="loadNotionData()">
+                            🔄 Réessayer Notion
+                        </button>
+                        <button class="demo-btn" onclick="loadDemoData()">
+                            🎭 Voir la démo
+                        </button>
+                    </div>
+                `;
+            } finally {
+                refreshBtn.disabled = false;
+                loadingSpinner.style.display = 'none';
+                refreshText.textContent = 'Actualiser';
+            }
+        }
+
+        // Fonction de démonstration (fallback)
+        function loadDemoData() {
+            updateSyncStatus('loading', 'Chargement démo...');
+            
             setTimeout(() => {
-                // Données de démonstration
                 const demoData = {
                     results: [
                         {
@@ -554,63 +639,14 @@
                                 Version: { rich_text: [{ plain_text: '2.3' }] }
                             },
                             url: 'https://notion.so'
-                        },
-                        {
-                            id: '4',
-                            properties: {
-                                Terme: { title: [{ plain_text: 'Customer Lifetime Value (CLV)' }] },
-                                Domaines: { multi_select: [{ name: 'Marketing' }, { name: 'Finance' }] },
-                                Définition: { rich_text: [{ plain_text: 'Valeur économique totale qu\'un client apporte à l\'entreprise sur toute la durée de sa relation commerciale.' }] },
-                                Statut: { select: { name: 'En révision' } },
-                                Propriétaire: { rich_text: [{ plain_text: 'Marketing Analytics' }] },
-                                'Dernière MAJ': { date: { start: '2024-11-28' } },
-                                Priorité: { select: { name: 'Moyenne' } },
-                                Version: { rich_text: [{ plain_text: '1.8' }] }
-                            },
-                            url: 'https://notion.so'
-                        },
-                        {
-                            id: '5',
-                            properties: {
-                                Terme: { title: [{ plain_text: 'Employee Net Promoter Score (eNPS)' }] },
-                                Domaines: { multi_select: [{ name: 'RH' }] },
-                                Définition: { rich_text: [{ plain_text: 'Indicateur mesurant la propension des employés à recommander leur entreprise comme lieu de travail.' }] },
-                                Statut: { select: { name: 'Actif' } },
-                                Propriétaire: { rich_text: [{ plain_text: 'Direction RH' }] },
-                                'Dernière MAJ': { date: { start: '2024-12-05' } },
-                                Priorité: { select: { name: 'Moyenne' } },
-                                Version: { rich_text: [{ plain_text: '1.4' }] }
-                            },
-                            url: 'https://notion.so'
-                        },
-                        {
-                            id: '6',
-                            properties: {
-                                Terme: { title: [{ plain_text: 'Service Level Agreement (SLA)' }] },
-                                Domaines: { multi_select: [{ name: 'Opérations' }, { name: 'Technique' }] },
-                                Définition: { rich_text: [{ plain_text: 'Contrat définissant les niveaux de service attendus entre un prestataire et un client, incluant les métriques de performance.' }] },
-                                Statut: { select: { name: 'Actif' } },
-                                Propriétaire: { rich_text: [{ plain_text: 'Direction Opérationnelle' }] },
-                                'Dernière MAJ': { date: { start: '2024-12-10' } },
-                                Priorité: { select: { name: 'Élevée' } },
-                                Version: { rich_text: [{ plain_text: '3.2' }] }
-                            },
-                            url: 'https://notion.so'
                         }
                     ]
                 };
 
                 processNotionData(demoData);
                 updateSyncStatus('success', 'Démo chargée');
-                document.getElementById('lastSync').textContent = new Date().toLocaleTimeString('fr-FR', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                });
-
-                refreshBtn.disabled = false;
-                loadingSpinner.style.display = 'none';
-                refreshText.textContent = 'Recharger démo';
-            }, 1000);
+                document.getElementById('lastSync').textContent = 'Démo';
+            }, 500);
         }
 
         // Traitement des données Notion
@@ -729,7 +765,9 @@
 
         // Initialisation
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('Glossaire initialisé en mode démo');
+            console.log('Glossaire initialisé - Connexion Notion');
+            // Chargement automatique au démarrage
+            loadNotionData();
         });
     </script>
 </body>

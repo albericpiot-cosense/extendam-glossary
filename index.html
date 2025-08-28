@@ -518,10 +518,7 @@
                 updateSyncStatus('loading', 'Synchronisation...');
 
                 // Détection automatique de l'URL Netlify
-                const isNetlify = window.location.hostname.includes('netlify');
-                const baseUrl = isNetlify 
-                    ? window.location.origin 
-                    : 'https://taupe-mooncake-e548ce.netlify.app'; // À remplacer par votre URL Netlify
+                cconst baseUrl = window.location.origin; // Auto-détection de l'URL
                 
                 const apiUrl = `${baseUrl}/.netlify/functions/notion-proxy`;
                 

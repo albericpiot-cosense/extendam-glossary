@@ -379,10 +379,10 @@
         <div class="header">
             <div class="sync-status" id="syncStatus">
                 <div class="sync-indicator" id="syncIndicator"></div>
-                <span id="syncText">Connecté à Notion</span>
+                <span id="syncText">Mode démo</span>
             </div>
             <h1>📚 Glossaire Métier Extendam</h1>
-            <p>Synchronisé automatiquement avec Notion</p>
+            <p>Interface de démonstration</p>
         </div>
         
         <div class="controls">
@@ -427,31 +427,30 @@
             
             <div class="control-group">
                 <label>🔄 Actions</label>
-                <button class="refresh-btn" id="refreshBtn" onclick="loadNotionData()">
+                <button class="refresh-btn" id="refreshBtn" onclick="loadDemoData()">
                     <div class="loading-spinner" id="loadingSpinner" style="display: none;"></div>
-                    <span id="refreshText">Actualiser</span>
+                    <span id="refreshText">Charger démo</span>
                 </button>
             </div>
         </div>
         
         <div id="glossaryContainer">
             <div class="loading-message">
-                <h3>Chargement des données...</h3>
-                <div class="loading-spinner" style="margin: 0 auto;"></div>
+                <h3>Cliquez sur "Charger démo" pour voir des exemples</h3>
             </div>
         </div>
         
         <div class="stats-bar">
             <div class="stat">
-                <span class="stat-number" id="totalCount">-</span>
+                <span class="stat-number" id="totalCount">0</span>
                 <span class="stat-label">Total</span>
             </div>
             <div class="stat">
-                <span class="stat-number" id="activeCount">-</span>
+                <span class="stat-number" id="activeCount">0</span>
                 <span class="stat-label">Actifs</span>
             </div>
             <div class="stat">
-                <span class="stat-number" id="domainCount">-</span>
+                <span class="stat-number" id="domainCount">0</span>
                 <span class="stat-label">Domaines</span>
             </div>
             <div class="stat">
@@ -462,12 +461,6 @@
     </div>
 
     <script>
-        // Configuration - Mise à jour pour les nouveaux tokens ntn_
-        const CONFIG = {
-            NOTION_TOKEN: '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',
-            DATABASE_ID: '25db8a91a892807cafa4e4c107cb8ba9'
-        };
-
         // Variables globales
         let glossaryData = [];
         let filteredData = [];
@@ -504,55 +497,124 @@
             text.textContent = message;
         }
 
-        // Chargement des données depuis Notion - Version Netlify
-        async function loadNotionData() {
+        // Chargement des données de démonstration
+        function loadDemoData() {
             const refreshBtn = document.getElementById('refreshBtn');
             const refreshText = document.getElementById('refreshText');
             const loadingSpinner = document.getElementById('loadingSpinner');
             
-            try {
-                // UI Loading
-                refreshBtn.disabled = true;
-                loadingSpinner.style.display = 'block';
-                refreshText.textContent = 'Chargement...';
-                updateSyncStatus('loading', 'Synchronisation...');
+            // UI Loading
+            refreshBtn.disabled = true;
+            loadingSpinner.style.display = 'block';
+            refreshText.textContent = 'Chargement...';
+            updateSyncStatus('loading', 'Chargement démo...');
 
-                // Détection automatique de l'URL Netlify
-                cconst baseUrl = window.location.origin; // Auto-détection de l'URL
-                
-                const apiUrl = `${baseUrl}/.netlify/functions/notion-proxy`;
-                
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+            setTimeout(() => {
+                // Données de démonstration
+                const demoData = {
+                    results: [
+                        {
+                            id: '1',
+                            properties: {
+                                Terme: { title: [{ plain_text: 'Return on Investment (ROI)' }] },
+                                Domaines: { multi_select: [{ name: 'Finance' }, { name: 'Marketing' }] },
+                                Définition: { rich_text: [{ plain_text: 'Indicateur financier qui mesure la rentabilité d\'un investissement en comparant le gain obtenu au coût de l\'investissement.' }] },
+                                Statut: { select: { name: 'Actif' } },
+                                Propriétaire: { rich_text: [{ plain_text: 'Direction Financière' }] },
+                                'Dernière MAJ': { date: { start: '2024-12-15' } },
+                                Priorité: { select: { name: 'Élevée' } },
+                                Version: { rich_text: [{ plain_text: '2.1' }] }
+                            },
+                            url: 'https://notion.so'
+                        },
+                        {
+                            id: '2',
+                            properties: {
+                                Terme: { title: [{ plain_text: 'Application Programming Interface (API)' }] },
+                                Domaines: { multi_select: [{ name: 'Technique' }] },
+                                Définition: { rich_text: [{ plain_text: 'Interface de programmation qui permet à différents logiciels de communiquer entre eux de manière standardisée.' }] },
+                                Statut: { select: { name: 'Actif' } },
+                                Propriétaire: { rich_text: [{ plain_text: 'Architecture IT' }] },
+                                'Dernière MAJ': { date: { start: '2024-12-10' } },
+                                Priorité: { select: { name: 'Élevée' } },
+                                Version: { rich_text: [{ plain_text: '1.5' }] }
+                            },
+                            url: 'https://notion.so'
+                        },
+                        {
+                            id: '3',
+                            properties: {
+                                Terme: { title: [{ plain_text: 'RGPD (Règlement Général sur la Protection des Données)' }] },
+                                Domaines: { multi_select: [{ name: 'Juridique' }, { name: 'Technique' }] },
+                                Définition: { rich_text: [{ plain_text: 'Réglementation européenne qui encadre le traitement des données personnelles sur le territoire de l\'Union européenne.' }] },
+                                Statut: { select: { name: 'Actif' } },
+                                Propriétaire: { rich_text: [{ plain_text: 'DPO / Juridique' }] },
+                                'Dernière MAJ': { date: { start: '2024-12-08' } },
+                                Priorité: { select: { name: 'Élevée' } },
+                                Version: { rich_text: [{ plain_text: '2.3' }] }
+                            },
+                            url: 'https://notion.so'
+                        },
+                        {
+                            id: '4',
+                            properties: {
+                                Terme: { title: [{ plain_text: 'Customer Lifetime Value (CLV)' }] },
+                                Domaines: { multi_select: [{ name: 'Marketing' }, { name: 'Finance' }] },
+                                Définition: { rich_text: [{ plain_text: 'Valeur économique totale qu\'un client apporte à l\'entreprise sur toute la durée de sa relation commerciale.' }] },
+                                Statut: { select: { name: 'En révision' } },
+                                Propriétaire: { rich_text: [{ plain_text: 'Marketing Analytics' }] },
+                                'Dernière MAJ': { date: { start: '2024-11-28' } },
+                                Priorité: { select: { name: 'Moyenne' } },
+                                Version: { rich_text: [{ plain_text: '1.8' }] }
+                            },
+                            url: 'https://notion.so'
+                        },
+                        {
+                            id: '5',
+                            properties: {
+                                Terme: { title: [{ plain_text: 'Employee Net Promoter Score (eNPS)' }] },
+                                Domaines: { multi_select: [{ name: 'RH' }] },
+                                Définition: { rich_text: [{ plain_text: 'Indicateur mesurant la propension des employés à recommander leur entreprise comme lieu de travail.' }] },
+                                Statut: { select: { name: 'Actif' } },
+                                Propriétaire: { rich_text: [{ plain_text: 'Direction RH' }] },
+                                'Dernière MAJ': { date: { start: '2024-12-05' } },
+                                Priorité: { select: { name: 'Moyenne' } },
+                                Version: { rich_text: [{ plain_text: '1.4' }] }
+                            },
+                            url: 'https://notion.so'
+                        },
+                        {
+                            id: '6',
+                            properties: {
+                                Terme: { title: [{ plain_text: 'Service Level Agreement (SLA)' }] },
+                                Domaines: { multi_select: [{ name: 'Opérations' }, { name: 'Technique' }] },
+                                Définition: { rich_text: [{ plain_text: 'Contrat définissant les niveaux de service attendus entre un prestataire et un client, incluant les métriques de performance.' }] },
+                                Statut: { select: { name: 'Actif' } },
+                                Propriétaire: { rich_text: [{ plain_text: 'Direction Opérationnelle' }] },
+                                'Dernière MAJ': { date: { start: '2024-12-10' } },
+                                Priorité: { select: { name: 'Élevée' } },
+                                Version: { rich_text: [{ plain_text: '3.2' }] }
+                            },
+                            url: 'https://notion.so'
+                        }
+                    ]
+                };
+
+                processNotionData(demoData);
+                updateSyncStatus('success', 'Démo chargée');
+                document.getElementById('lastSync').textContent = new Date().toLocaleTimeString('fr-FR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
                 });
 
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.message || `Erreur ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                processNotionData(data);
-
-            } catch (error) {
-                console.error('Erreur lors du chargement:', error);
-                updateSyncStatus('error', 'Erreur de sync');
-                
-                // Affichage d'erreur avec plus de détails
-                showError(`${error.message}\n\nVérifiez :\n• Votre token Notion (${CONFIG.NOTION_TOKEN.substring(0, 10)}...)\n• L'ID de la database (${CONFIG.DATABASE_ID})\n• Que l'intégration est connectée à la database`);
-            } finally {
                 refreshBtn.disabled = false;
                 loadingSpinner.style.display = 'none';
-                refreshText.textContent = 'Actualiser';
-            }
+                refreshText.textContent = 'Recharger démo';
+            }, 1000);
         }
 
         // Traitement des données Notion
         function processNotionData(data) {
-            // Transformation des données Notion
             glossaryData = data.results.map(page => ({
                 id: page.id,
                 term: page.properties.Terme?.title?.[0]?.plain_text || 'Sans nom',
@@ -565,27 +627,8 @@
                 version: page.properties.Version?.rich_text?.[0]?.plain_text || '1.0',
                 notionUrl: page.url
             }));
-
-            updateSyncStatus('success', 'Synchronisé');
-            document.getElementById('lastSync').textContent = new Date().toLocaleTimeString('fr-FR', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
             
             applyFilters();
-        }
-
-        // Affichage d'erreur
-        function showError(message) {
-            document.getElementById('glossaryContainer').innerHTML = `
-                <div class="error-message">
-                    <h3>❌ Erreur de chargement</h3>
-                    <pre style="white-space: pre-line; text-align: left; background: #f8f9fa; padding: 1rem; border-radius: 8px; margin: 1rem 0;">${message}</pre>
-                    <button class="refresh-btn" onclick="loadNotionData()" style="margin-top: 1rem;">
-                        Réessayer
-                    </button>
-                </div>
-            `;
         }
 
         // Création d'une carte de terme
@@ -686,11 +729,7 @@
 
         // Initialisation
         document.addEventListener('DOMContentLoaded', () => {
-            // Auto-refresh toutes les 5 minutes
-            setInterval(loadNotionData, 5 * 60 * 1000);
-            
-            // Chargement initial
-            loadNotionData();
+            console.log('Glossaire initialisé en mode démo');
         });
     </script>
 </body>

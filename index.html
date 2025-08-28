@@ -462,11 +462,10 @@
     </div>
 
     <script>
-        // Configuration - À REMPLACER PAR VOS VRAIES VALEURS
+        // Configuration - Mise à jour pour les nouveaux tokens ntn_
         const CONFIG = {
-            NOTION_TOKEN: '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',
-            DATABASE_ID: '25db8a91a892807cafa4e4c107cb8ba9',
-            CORS_PROXY: 'https://api.allorigins.win/raw?url='
+            NOTION_TOKEN: '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',
+            DATABASE_ID: '25db8a91a892807cafa4e4c107cb8ba9'
         };
 
         // Variables globales
@@ -505,7 +504,7 @@
             text.textContent = message;
         }
 
-        // Chargement des données depuis Notion
+        // Chargement des données depuis Notion - Version mise à jour
         async function loadNotionData() {
             const refreshBtn = document.getElementById('refreshBtn');
             const refreshText = document.getElementById('refreshText');
@@ -518,12 +517,16 @@
                 refreshText.textContent = 'Chargement...';
                 updateSyncStatus('loading', 'Synchronisation...');
 
-                const response = await fetch(`${CONFIG.CORS_PROXY}https://api.notion.com/v1/databases/${CONFIG.DATABASE_ID}/query`, {
+                // Nouvelle approche pour éviter CORS
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent('https://api.notion.com/v1/databases/' + CONFIG.DATABASE_ID + '/query')}`;
+                
+                const response = await fetch(proxyUrl, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${CONFIG.NOTION_TOKEN}`,
                         'Content-Type': 'application/json',
-                        'Notion-Version': '2022-06-28'
+                        'Notion-Version': '2022-06-28',
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: JSON.stringify({
                         sorts: [
@@ -536,37 +539,36 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Erreur API Notion: ${response.status}`);
+                    // Fallback: essayer avec un autre proxy
+                    const fallbackResponse = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://api.notion.com/v1/databases/' + CONFIG.DATABASE_ID + '/query')}`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${CONFIG.NOTION_TOKEN}`,
+                            'Content-Type': 'application/json',
+                            'Notion-Version': '2022-06-28'
+                        },
+                        body: JSON.stringify({
+                            sorts: [{ property: 'Terme', direction: 'ascending' }]
+                        })
+                    });
+                    
+                    if (!fallbackResponse.ok) {
+                        throw new Error(`Erreur API Notion: ${response.status} - ${response.statusText}`);
+                    }
+                    
+                    const data = await fallbackResponse.json();
+                    processNotionData(data);
+                } else {
+                    const data = await response.json();
+                    processNotionData(data);
                 }
-
-                const data = await response.json();
-                
-                // Transformation des données Notion
-                glossaryData = data.results.map(page => ({
-                    id: page.id,
-                    term: page.properties.Terme?.title?.[0]?.plain_text || 'Sans nom',
-                    domains: page.properties.Domaines?.multi_select?.map(d => d.name) || [],
-                    definition: page.properties.Définition?.rich_text?.[0]?.plain_text || 'Aucune définition',
-                    status: page.properties.Statut?.select?.name || 'Brouillon',
-                    owner: page.properties.Propriétaire?.rich_text?.[0]?.plain_text || 'Non assigné',
-                    lastUpdate: page.properties['Dernière MAJ']?.date?.start || null,
-                    priority: page.properties.Priorité?.select?.name || 'Faible',
-                    version: page.properties.Version?.rich_text?.[0]?.plain_text || '1.0',
-                    notionUrl: page.url
-                }));
-
-                updateSyncStatus('success', 'Synchronisé');
-                document.getElementById('lastSync').textContent = new Date().toLocaleTimeString('fr-FR', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                });
-                
-                applyFilters();
 
             } catch (error) {
                 console.error('Erreur lors du chargement:', error);
                 updateSyncStatus('error', 'Erreur de sync');
-                showError(error.message);
+                
+                // Affichage d'erreur avec plus de détails
+                showError(`${error.message}\n\nVérifiez :\n• Votre token Notion (${CONFIG.NOTION_TOKEN.substring(0, 10)}...)\n• L'ID de la database (${CONFIG.DATABASE_ID})\n• Que l'intégration est connectée à la database`);
             } finally {
                 refreshBtn.disabled = false;
                 loadingSpinner.style.display = 'none';
@@ -574,20 +576,37 @@
             }
         }
 
+        // Traitement des données Notion
+        function processNotionData(data) {
+            // Transformation des données Notion
+            glossaryData = data.results.map(page => ({
+                id: page.id,
+                term: page.properties.Terme?.title?.[0]?.plain_text || 'Sans nom',
+                domains: page.properties.Domaines?.multi_select?.map(d => d.name) || [],
+                definition: page.properties.Définition?.rich_text?.[0]?.plain_text || 'Aucune définition',
+                status: page.properties.Statut?.select?.name || 'Brouillon',
+                owner: page.properties.Propriétaire?.rich_text?.[0]?.plain_text || 'Non assigné',
+                lastUpdate: page.properties['Dernière MAJ']?.date?.start || null,
+                priority: page.properties.Priorité?.select?.name || 'Faible',
+                version: page.properties.Version?.rich_text?.[0]?.plain_text || '1.0',
+                notionUrl: page.url
+            }));
+
+            updateSyncStatus('success', 'Synchronisé');
+            document.getElementById('lastSync').textContent = new Date().toLocaleTimeString('fr-FR', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            applyFilters();
+        }
+
         // Affichage d'erreur
         function showError(message) {
             document.getElementById('glossaryContainer').innerHTML = `
                 <div class="error-message">
                     <h3>❌ Erreur de chargement</h3>
-                    <p>${message}</p>
-                    <p><strong>Vérifiez :</strong></p>
-                    <ul style="text-align: left; display: inline-block; margin-top: 1rem;">
-                        <li>Votre token Notion</li>
-                        <li>L'ID de votre database</li>
-                        <li>Les permissions de l'intégration</li>
-                        <li>La structure de votre database</li>
-                    </ul>
-                    <br><br>
+                    <pre style="white-space: pre-line; text-align: left; background: #f8f9fa; padding: 1rem; border-radius: 8px; margin: 1rem 0;">${message}</pre>
                     <button class="refresh-btn" onclick="loadNotionData()" style="margin-top: 1rem;">
                         Réessayer
                     </button>

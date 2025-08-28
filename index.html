@@ -504,7 +504,7 @@
             text.textContent = message;
         }
 
-        // Chargement des données depuis Notion - Version mise à jour
+        // Chargement des données depuis Notion - Version Netlify
         async function loadNotionData() {
             const refreshBtn = document.getElementById('refreshBtn');
             const refreshText = document.getElementById('refreshText');
@@ -517,51 +517,28 @@
                 refreshText.textContent = 'Chargement...';
                 updateSyncStatus('loading', 'Synchronisation...');
 
-                // Nouvelle approche pour éviter CORS
-                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent('https://api.notion.com/v1/databases/' + CONFIG.DATABASE_ID + '/query')}`;
+                // Détection automatique de l'URL Netlify
+                const isNetlify = window.location.hostname.includes('netlify');
+                const baseUrl = isNetlify 
+                    ? window.location.origin 
+                    : 'https://votre-site-netlify.netlify.app'; // À remplacer par votre URL Netlify
                 
-                const response = await fetch(proxyUrl, {
+                const apiUrl = `${baseUrl}/.netlify/functions/notion-proxy`;
+                
+                const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${CONFIG.NOTION_TOKEN}`,
-                        'Content-Type': 'application/json',
-                        'Notion-Version': '2022-06-28',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({
-                        sorts: [
-                            {
-                                property: 'Terme',
-                                direction: 'ascending'
-                            }
-                        ]
-                    })
+                        'Content-Type': 'application/json'
+                    }
                 });
 
                 if (!response.ok) {
-                    // Fallback: essayer avec un autre proxy
-                    const fallbackResponse = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://api.notion.com/v1/databases/' + CONFIG.DATABASE_ID + '/query')}`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${CONFIG.NOTION_TOKEN}`,
-                            'Content-Type': 'application/json',
-                            'Notion-Version': '2022-06-28'
-                        },
-                        body: JSON.stringify({
-                            sorts: [{ property: 'Terme', direction: 'ascending' }]
-                        })
-                    });
-                    
-                    if (!fallbackResponse.ok) {
-                        throw new Error(`Erreur API Notion: ${response.status} - ${response.statusText}`);
-                    }
-                    
-                    const data = await fallbackResponse.json();
-                    processNotionData(data);
-                } else {
-                    const data = await response.json();
-                    processNotionData(data);
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `Erreur ${response.status}: ${response.statusText}`);
                 }
+                
+                const data = await response.json();
+                processNotionData(data);
 
             } catch (error) {
                 console.error('Erreur lors du chargement:', error);
